@@ -1,0 +1,6 @@
+@BarnManagementAPI_HostAddress = http://localhost:5062
+
+GET {{BarnManagementAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
