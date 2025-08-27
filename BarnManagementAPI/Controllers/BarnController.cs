@@ -43,5 +43,24 @@ namespace BarnManagementAPI.Controllers
             if (barn == null) return NotFound();
             return barn;
         }
+
+       
+        [HttpPost("{id:int}/deposit")]
+        public async Task<IActionResult> Deposit(int id, [FromBody] BalanceDto dto)
+        {
+            if (dto.Amount <= 0) return BadRequest("Amount must be > 0");
+            var barn = await _db.Barns.FirstOrDefaultAsync(b => b.Id == id);
+            if (barn is null) return NotFound();
+            barn.Balance += dto.Amount;
+            _db.Transactions.Add(new Transaction
+            {
+                BarnId = barn.Id,
+                Type = TransactionType.Income,
+                Amount = dto.Amount,
+                RefType = "Deposit"
+            });
+            await _db.SaveChangesAsync();
+            return Ok(new { barn.Id, barn.Balance });
+        }
     }
 }

@@ -40,34 +40,7 @@ namespace BarnManagementAPI.Controllers
             return Ok(list);
         }
 
-        //[HttpPost]
-        //[Authorize(Roles = "Admin")]
-        //public async Task<IActionResult> Create(int barnId, [FromBody] AnimalCreateDtos dto)
-        //{
-        //    var barn = await _db.Barns.Include(b => b.Animals)
-        //                              .FirstOrDefaultAsync(b => b.Id == barnId);
-        //    if (barn is null) return NotFound("Barn not found.");
 
-
-
-        //    var now = DateTime.UtcNow;
-
-        //    var animal = new Animal
-        //    {
-        //        BarnId = barn.Id,
-        //        Type = dto.Type,
-        //        Gender = dto.Gender,
-        //        LifeSpanDays = dto.LifeSpanDays,
-        //        ProductionIntervalDays = dto.ProductionIntervalDays,
-        //        BornAt = now,
-        //        NextProductionAt = now.AddDays(dto.ProductionIntervalDays),
-        //        IsAlive = true
-        //    };
-
-        //    _db.Animals.Add(animal);
-        //    await _db.SaveChangesAsync();
-        //    return Ok(animal);
-        //}
 
         [HttpGet("{id:int}")]
         public async Task<ActionResult<AnimalDto>> Get(int id)
