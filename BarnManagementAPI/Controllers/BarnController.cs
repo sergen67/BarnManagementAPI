@@ -71,5 +71,31 @@ namespace BarnManagementAPI.Controllers
             await _db.SaveChangesAsync();
             return Ok(new { barn.Id, barn.Balance });
         }
+        [HttpGet("{barnId:int}/animals")]
+        public async Task<ActionResult<IEnumerable<AnimalDto>>> AnimalsOfBarn(int barnId)
+        {
+            // Barn var mı? (İstersen bu kontrolü atlayıp boş liste dönebilirsin)
+            var exists = await _db.Barns.AsNoTracking().AnyAsync(b => b.Id == barnId);
+            if (!exists) return NotFound("Barn not found.");
+
+            var now = DateTime.UtcNow;
+
+            var list = await _db.Animals
+                .AsNoTracking()
+                .Where(a => a.BarnId == barnId && a.IsAlive)
+                .Select(a => new AnimalDto(
+                    a.Id,
+                    a.Type ?? "",                    // entity’de Type ise a.Type
+                    a.Gender ?? "",
+                    (int)Math.Max(0, (now - a.BornAt).TotalSeconds),
+                    a.LifeSpanDays,
+                    a.IsAlive,
+                    a.NextProductionAt
+                ))
+                .ToListAsync();
+
+            return Ok(list);
+        }
+
     }
 }

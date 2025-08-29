@@ -20,25 +20,30 @@ namespace BarnManagementAPI.Controllers
         public AnimalsController(BarnDbContext db) { _db = db; }
 
         [HttpGet]
-        public async Task<ActionResult<List<AnimalDto>>> Get()
+        public async Task<ActionResult<List<AnimalDto>>> Get([FromQuery] int? barnId)
         {
             var now = DateTime.UtcNow;
 
-            var list = await _db.Animals
-             .AsNoTracking()
-             .Where(a => a.IsAlive)
-            .Select(a => new AnimalDto(
-                a.Id,
-                a.Type,
-                a.Gender,
-                EF.Functions.DateDiffDay(a.BornAt, now),
-                a.LifeSpanDays,
-                a.IsAlive,
-                a.NextProductionAt
-                   ))
-              .ToListAsync();
+            var q = _db.Animals
+                .AsNoTracking()
+                .Where(a => a.IsAlive);                 // ölüleri gizle
 
-            return Ok(list);
+            if (barnId.HasValue)
+                q = q.Where(a => a.BarnId == barnId.Value);
+
+            var list = await q
+                .Select(a => new AnimalDto(
+                    a.Id,
+                    a.Type ?? "",                    // entity’de Type kullanıyorsan burayı a.Type yap
+                    a.Gender ?? "",
+                    (int)Math.Max(0, (now - a.BornAt).TotalSeconds), // AgeDays alanına saniye yazıyoruz
+                    a.LifeSpanDays,
+                    a.IsAlive,
+                    a.NextProductionAt
+                ))
+                .ToListAsync();
+
+            return list;
         }
 
 
