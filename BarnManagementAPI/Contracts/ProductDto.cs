@@ -9,7 +9,7 @@ namespace BarnManagementAPI.Contracts
         public string? ProductType { get; set; }
     }
     public record ProductDto(
-        int Id, int AnimalId, string Type, int Quantity, bool IsSold, DateTime ProducedAt
+        int Id, int? AnimalId, string Type, int Quantity, bool IsSold, DateTime ProducedAt
     );
 
 }

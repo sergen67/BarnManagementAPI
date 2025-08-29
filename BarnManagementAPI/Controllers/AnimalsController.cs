@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BarnManagementAPI.Controllers
 {
-   
+
 
     [ApiController]
     [Route("[controller]")]
@@ -26,6 +26,7 @@ namespace BarnManagementAPI.Controllers
 
             var list = await _db.Animals
              .AsNoTracking()
+             .Where(a => a.IsAlive)
             .Select(a => new AnimalDto(
                 a.Id,
                 a.Type,
@@ -74,45 +75,65 @@ namespace BarnManagementAPI.Controllers
             await _db.SaveChangesAsync();
             return NoContent();
         }
-        
-        [HttpPost("barns/{barnId:int}/animals/purchase")]
-        public async Task<IActionResult> Purchase(int barnId, [FromBody] PurchaseAnimalDto dto)
-        {
-            var barn = await _db.Barns
-                .Include(b => b.Animals)
-                .FirstOrDefaultAsync(b => b.Id == barnId);
-            if (barn is null) return NotFound("Barn not found.");
 
-            if (barn.Animals.Count(a => a.IsAlive) >= barn.Capacity)
-                return BadRequest("Capacity reached.");
-            if (barn.Balance < dto.Price)
-                return BadRequest("Insufficient balance.");
+        [HttpPost("purchase")]
+        public async Task<ActionResult<AnimalDto>> Purchase([FromQuery] int barnId, [FromBody] PurchaseAnimalDto dto)
+        {
+            if (!await _db.Barns.AnyAsync(b => b.Id == barnId))
+                return NotFound("Barn not found.");
+
             var now = DateTime.UtcNow;
-            var animal = new Animal
+            var (lifeSec, intervalSec) = DefaultsFor(dto.Species);
+
+            var a = new Animal
             {
-                BarnId = barn.Id,
-                Type = dto.Type,
-                Gender = dto.Gender,
-                LifeSpanDays = dto.LifeSpanDays,
-                ProductionIntervalDays = dto.ProductionIntervalDays,
-                NextProductionAt = now.AddSeconds(5),
+                BarnId = barnId,
+
+
+                Type = dto.Species?.Trim() ?? "",
+
+                Gender = string.IsNullOrWhiteSpace(dto.Gender) ? "female" : dto.Gender!.Trim(),
+
+
+                LifeSpanDays = lifeSec,
+                ProductionIntervalDays = intervalSec,
+
+                BornAt = now,
+                NextProductionAt = now,
                 IsAlive = true
             };
 
-            barn.Balance -= dto.Price;
-
-            _db.Animals.Add(animal);
-            _db.Transactions.Add(new Transaction
-            {
-                BarnId = barn.Id,
-                Type = TransactionType.Purchase,
-                Amount = dto.Price,
-                RefType = "Animal"
-            });
-
+            _db.Animals.Add(a);
             await _db.SaveChangesAsync();
-            return Ok(animal);
+
+
+            return Ok(ToDto(a));
         }
+
+        private static (int lifeSec, int intervalSec) DefaultsFor(string? species)
+        {
+            var s = (species ?? "").ToLowerInvariant();
+            if (s.Contains("inek") || s.Contains("cow")) return (120, 15);
+            if (s.Contains("tavuk") || s.Contains("chicken")) return (30, 10);
+            return (45, 12);
+        }
+
+        private static AnimalDto ToDto(Animal a)
+        {
+
+            var ageSeconds = (int)Math.Max(0, (DateTime.UtcNow - a.BornAt).TotalSeconds);
+
+            return new AnimalDto(
+                a.Id,
+                a.Type ?? "",
+                a.Gender ?? "",
+                ageSeconds,
+                a.LifeSpanDays,
+                a.IsAlive,
+                a.NextProductionAt
+            );
+        }
+
 
         [Authorize]
         [HttpPost("animals/{id:int}/sell")]

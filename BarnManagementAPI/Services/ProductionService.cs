@@ -29,11 +29,13 @@ namespace BarnManagementAPI.Services
                         var now = DateTime.UtcNow;
 
                         var toDie = await db.Animals
-                            .Where(a => a.IsAlive && now >= a.BornAt.AddDays(a.LifeSpanDays))
+                           .Where(a => a.IsAlive && now >= a.BornAt.AddSeconds(a.LifeSpanDays))
                             .ToListAsync(stoppingToken);
-
-                        foreach (var a in toDie)
-                            a.IsAlive = false;
+                            
+                        if(toDie.Count > 0)
+                        {
+                            db.Animals.RemoveRange(toDie);
+                        }
 
 
                         var toProduce = await db.Animals
@@ -52,7 +54,7 @@ namespace BarnManagementAPI.Services
                                 ProductAt = now,
                                 Issold = false
                             });
-                            a.NextProductionAt = now.AddDays(a.ProductionIntervalDays);
+                            a.NextProductionAt = now.AddSeconds(a.ProductionIntervalDays);
                         }
 
                         if (toDie.Count > 0 || toProduce.Count > 0)
@@ -69,7 +71,7 @@ namespace BarnManagementAPI.Services
 
                 try
                 {
-                    await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+                    await Task.Delay(TimeSpan.FromSeconds(2), stoppingToken);
                 }
                 catch (OperationCanceledException)
                 {

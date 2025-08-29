@@ -30,7 +30,8 @@ namespace BarnManagementAPI.Data
             {
                 e.Property(x => x.ProductType).IsRequired().HasMaxLength(50);
                 e.Property(x => x.Quantity).HasPrecision(18, 3);
-                e.HasOne(x => x.Animal).WithMany().HasForeignKey(x => x.AnimaId).OnDelete(DeleteBehavior.Cascade);
+                e.HasOne(x => x.Animal).WithMany().HasForeignKey(x => x.AnimaId)
+                .OnDelete(DeleteBehavior.SetNull);
             });
           
             mb.Entity<Transaction>()

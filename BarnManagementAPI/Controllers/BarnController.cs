@@ -15,7 +15,16 @@ namespace BarnManagementAPI.Controllers
     {
         private readonly BarnDbContext _db;
         public BarnController(BarnDbContext db) { _db = db; }
+        [HttpGet("list")]
+        public async Task<ActionResult<IEnumerable<BarnListDto>>> ListAll()
+        {
+            var items = await _db.Barns
+                .AsNoTracking()
+                .Select(b => new BarnListDto(b.Id, b.Name))
+                .ToListAsync();
 
+            return Ok(items);
+        }
         [HttpPost]
         public async Task<ActionResult<Barns>> Create([FromBody] CreateBarnDto dto)
         {
